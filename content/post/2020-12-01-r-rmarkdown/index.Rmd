@@ -21,7 +21,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 You can embed an R code chunk like this:
 
 ```{r gapminder}
-library(gapminder)
+library(gapminder) #comment
 ```
 
 # Including Plots
