@@ -1,0 +1,14 @@
+---
+title: chart
+author: Pieter Blins
+date: '2021-02-17'
+slug: chart
+categories: []
+tags: []
+---
+
+```{r fig.cap = "Men wordt ouder in NL"}
+gapminder::gapminder %>% filter(country == "Netherlands") %>% 
+  ggplot(aes(x=year, y= lifeExp)) + geom_line()
+```
+
