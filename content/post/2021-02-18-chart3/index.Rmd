@@ -1,8 +1,8 @@
 ---
-title: chart
-author: Pieter Blins
-date: '2021-02-17'
-slug: chart
+title: chart3
+author: Simon Urbanek
+date: '2021-02-18'
+slug: chart3
 categories: []
 tags: []
 ---
@@ -12,4 +12,3 @@ library(tidyverse)
 gapminder::gapminder %>% filter(country == "Netherlands") %>% 
   ggplot(aes(x=year, y= lifeExp)) + geom_line() #
 ```
-
