@@ -1,0 +1,25 @@
+---
+title: "Peru"
+author: "Pieter Blins"
+date: '2021-02-18'
+slug: peru
+categories: []
+tags: []
+---
+
+---
+title: Afghanistan
+author: Pieter Blins
+date: '2021-02-18'
+slug: next-day
+categories: []
+tags:
+  - R Markdown
+---
+
+
+```{r message = F, warning = F,  fig.cap = "En hoe zit het in Peru?"}
+library(tidyverse)
+gapminder::gapminder %>% filter(country == "Peru") %>% 
+  ggplot(aes(x=year, y= lifeExp)) + geom_line() #
+```
