@@ -1,0 +1,20 @@
+---
+title: "Afghanistan"
+author: "Pieter Blins"
+date: '2021-02-18'
+slug: Afghanistan
+categories: []
+tags: []
+---
+
+
+
+<pre class="r"><code>library(tidyverse)
+gapminder::gapminder %&gt;% filter(country == &quot;Afghanistan&quot;) %&gt;% 
+  ggplot(aes(x=year, y= lifeExp)) + geom_line() #</code></pre>
+<div class="figure"><span id="fig:unnamed-chunk-1"></span>
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-1-1.png" alt="En hoe zit het in Afghanistan?" width="672" />
+<p class="caption">
+Figure 1: En hoe zit het in Afghanistan?
+</p>
+</div>

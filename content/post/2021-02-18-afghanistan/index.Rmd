@@ -1,0 +1,24 @@
+---
+title: "Afghanistan"
+author: "Pieter Blins"
+date: '2021-02-18'
+slug: Afghanistan
+categories: []
+tags: []
+---
+---
+title: Afghanistan
+author: Pieter Blins
+date: '2021-02-18'
+slug: next-day
+categories: []
+tags:
+  - R Markdown
+---
+
+
+```{r message = F, warning = F,  fig.cap = "En hoe zit het in Afghanistan?"}
+library(tidyverse)
+gapminder::gapminder %>% filter(country == "Afghanistan") %>% 
+  ggplot(aes(x=year, y= lifeExp)) + geom_line() #
+```
