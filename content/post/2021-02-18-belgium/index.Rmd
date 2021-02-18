@@ -1,0 +1,15 @@
+---
+title: "Belgium"
+author: "Pieter Blins"
+date: '2021-02-18'
+slug: belgium
+categories: []
+tags: []
+---
+
+
+```{r message = F, warning = F,  fig.cap = "België"}
+library(tidyverse)
+gapminder::gapminder %>% filter(country == "Belgium") %>% 
+  ggplot(aes(x=year, y= lifeExp)) + geom_line() #
+```
