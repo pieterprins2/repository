@@ -1,5 +1,5 @@
 ---
-title: "Nederland"
+title: "RMG.LSE"
 author: "Pieter  Blins"
 date: '2021-02-18'
 categories: R
@@ -19,13 +19,22 @@ tags:
 </div>
 <div id="including-plots" class="section level1">
 <h1>Including Plots</h1>
-<p>You can also embed plots. See Figure <a href="#fig:pie">1</a> for example:</p>
+<p>You can also embed plots. See Figure <a href="#fig:pie"><strong>??</strong></a> for example:</p>
 <pre class="r"><code>gapminder::gapminder %&gt;% filter(country == &quot;Netherlands&quot;) %&gt;% 
   ggplot(aes(x=year, y = lifeExp))+geom_line()</code></pre>
-<div class="figure"><span id="fig:pie"></span>
-<img src="{{< blogdown/postref >}}index_files/figure-html/pie-1.png" alt="steeds ouder in NL" width="672" />
+<div class="figure"><span id="fig:line"></span>
+<img src="{{< blogdown/postref >}}index_files/figure-html/line-1.png" alt="steeds ouder in NL" width="672" />
 <p class="caption">
 Figure 1: steeds ouder in NL
+</p>
+</div>
+<pre class="r"><code>#gegevens uit een project laden (hele environment)
+all_ticker_dfs &lt;- readRDS(&quot;/Users/pieter/OneDrive/R Projects/Euromomentum/all_ticker_dfs.rds&quot;)
+all_ticker_dfs %&gt;% filter(eod_ticker == &quot;RMG.LSE&quot;) %&gt;% ggplot(aes(x=date, y = Close))+geom_line()</code></pre>
+<div class="figure"><span id="fig:loadimage"></span>
+<img src="{{< blogdown/postref >}}index_files/figure-html/loadimage-1.png" alt="Een koersgrafiek van Royal Mail Group" width="672" />
+<p class="caption">
+Figure 2: Een koersgrafiek van Royal Mail Group
 </p>
 </div>
 </div>

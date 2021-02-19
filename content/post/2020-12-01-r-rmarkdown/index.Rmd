@@ -1,5 +1,5 @@
 ---
-title: "Nederland"
+title: "RMG.LSE"
 author: "Pieter  Blins"
 date: '2021-02-18'
 categories: R
@@ -28,7 +28,16 @@ library(gapminder) #comment
 
 You can also embed plots. See Figure \@ref(fig:pie) for example:
 
-```{r pie, tidy=FALSE, fig.cap="steeds ouder in NL"}
+```{r line, tidy=FALSE, fig.cap="steeds ouder in NL"}
 gapminder::gapminder %>% filter(country == "Netherlands") %>% 
   ggplot(aes(x=year, y = lifeExp))+geom_line()
 ```
+
+```{r loadimage, fig.cap="Een koersgrafiek van Royal Mail Group"}
+#gegevens uit een project laden (hele environment)
+all_ticker_dfs <- readRDS("/Users/pieter/OneDrive/R Projects/Euromomentum/all_ticker_dfs.rds")
+all_ticker_dfs %>% filter(eod_ticker == "RMG.LSE") %>% ggplot(aes(x=date, y = Close))+geom_line()
+
+```
+
+

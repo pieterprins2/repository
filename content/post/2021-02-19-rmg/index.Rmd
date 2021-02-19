@@ -1,0 +1,20 @@
+---
+title: "RMG"
+author: "Pieter Blins"
+date: '2021-02-19'
+slug: rmg
+categories: []
+tags: []
+---
+
+```{r, fig.cap="Royal Mail"}
+library(tidyverse)
+
+all_ticker_dfs <- readRDS("/Users/pieter/OneDrive/R Projects/Euromomentum/all_ticker_dfs.rds")
+
+all_ticker_dfs %>% filter(eod_ticker == "RMG.LSE") %>% 
+  ggplot(aes(x=date, y = Close))+
+  geom_line()+
+  theme_minimal()
+```
+
