@@ -1,0 +1,137 @@
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+
+<table>
+<tbody>
+<tr class="odd">
+<td>title: “Bootstrappen”</td>
+</tr>
+<tr class="even">
+<td>author: ’’</td>
+</tr>
+<tr class="odd">
+<td>date: ‘2022-02-21’</td>
+</tr>
+<tr class="even">
+<td>slug: bootstrappen</td>
+</tr>
+<tr class="odd">
+<td>categories: []</td>
+</tr>
+<tr class="even">
+<td>tags: []</td>
+</tr>
+<tr class="odd">
+<td>output:</td>
+</tr>
+<tr class="even">
+<td>html_document:</td>
+</tr>
+<tr class="odd">
+<td>df_print: paged</td>
+</tr>
+<tr class="even">
+<td>toc: yes</td>
+</tr>
+<tr class="odd">
+<td>toc_float:</td>
+</tr>
+<tr class="even">
+<td>toc_collapsed: yes</td>
+</tr>
+<tr class="odd">
+<td>toc_depth: 4</td>
+</tr>
+<tr class="even">
+<td>number_sections: yes</td>
+</tr>
+</tbody>
+</table>
+<div id="historie-vanaf-1999" class="section level1">
+<h1>Historie vanaf 1999</h1>
+<p>Return historie aandelen, obligaties en verschillende mixen, sinds 2015 (te weinig uiteraard, het gaat om het idee)</p>
+<pre><code>## # A tibble: 278 × 6
+##    date       MSDEWIN BM8020 BM5050 BM2080 BENEGA
+##    &lt;date&gt;       &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;
+##  1 1998-12-31    NA     NA     NA     NA     NA  
+##  2 1999-01-31     5.6    4.8    3.6    2.4    1.5
+##  3 1999-02-28     0.7    0.3   -0.4   -1     -1.5
+##  4 1999-03-31     5.9    4.8    3.3    1.7    0.6
+##  5 1999-04-30     6.1    5.1    3.6    2.1    1.1
+##  6 1999-05-31    -2.3   -2     -1.5   -1.1   -0.8
+##  7 1999-06-30     5.8    4.3    2     -0.2   -1.8
+##  8 1999-07-31    -3.9   -3.4   -2.5   -1.6   -1  
+##  9 1999-08-31     1.1    0.9    0.5    0.1   -0.2
+## 10 1999-09-30    -1.8   -1.5   -1.1   -0.7   -0.4
+## # … with 268 more rows</code></pre>
+<div id="deze-historie-in-grafieken" class="section level2">
+<h2>Deze historie in grafieken</h2>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/historie_chart-1.png" width="672" /></p>
+</div>
+</div>
+<div id="een-alternatieve-12-maands-historie" class="section level1">
+<h1>Een alternatieve 12-maands historie</h1>
+<p>Een alternatieve historie (een “bootstrap”) kan worden gemaakt door door per regel een willekeurige trekking uit de historie te doen. “Met teruglegging”, dus kunnen regels meerdere keren, maar ook helemaal niet, voorkomen</p>
+<pre><code>## # A tibble: 12 × 7
+## # Groups:   id [1]
+##       id maand MSDEWIN BM8020 BM5050 BM2080 BENEGA
+##    &lt;int&gt; &lt;int&gt;   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;
+##  1     1     1    -1.2   -0.6    0.1    0.9    1.4
+##  2     1     2    -3.5   -2.5   -1.1    0.4    1.4
+##  3     1     3     1.2    0.7    0     -0.7   -1.2
+##  4     1     4    -0.9   -0.8   -0.5   -0.2   -0.1
+##  5     1     5    -2.1   -1.6   -1     -0.3    0.1
+##  6     1     6     0.6    0.4    0     -0.3   -0.5
+##  7     1     7    -0.5   -0.2    0.1    0.4    0.7
+##  8     1     8    -3.4   -2.8   -1.9   -1     -0.4
+##  9     1     9    -1     -0.6    0.1    0.8    1.2
+## 10     1    10     4.2    3.2    1.6    0.1   -0.9
+## 11     1    11     3.6    3.5    3.3    3.2    3.1
+## 12     1    12     1.6    1.2    0.6    0     -0.4</code></pre>
+<p>Deze ene specifieke alternatieve 12-m historie geeft de volgende grafieken</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/single_alt_historie_chart-1.png" width="672" /></p>
+</div>
+<div id="alternatieve-12-maands-histories" class="section level1">
+<h1>1000 alternatieve 12-maands histories</h1>
+<p>Door deze trekking 1000 keer te doen ontstaan 1000 alternatieve histories</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/bootstrap_12m_maal_1000_chart-1.png" width="672" /></p>
+<p>De geannualiseerde returns van deze 1000 12-m alternatieve histories voor elk van de benchmarks in een histogram</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/resampling1000_histogram-1.png" width="672" /></p>
+<p>Gemiddelden van de geannualiseerde 12-m returns over de 1000 histories en de sd’s daarvan in %</p>
+<pre><code>## # A tibble: 5 × 4
+##   name    horizon  mean    sd
+##   &lt;fct&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 MSDEWIN       1   6.8  14.9
+## 2 BM8020        1   6.2  11.8
+## 3 BM5050        1   5.4   7.4
+## 4 BM2080        1   4.5   4.2
+## 5 BENEGA        1   3.9   4.1</code></pre>
+</div>
+<div id="alternatieve-36-maands-histories" class="section level1">
+<h1>1000 alternatieve 36-maands histories</h1>
+<p>Een langere horizon, zeg 3 jaar, is te maken door 1000 keer 36 trekkingen te doen</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/1000_36m_alt_historie_chart-1.png" width="672" /></p>
+<p>De geannualiseerde returns van deze 1000 alternatieve 36-maands histories voor elk van de benchmarks in een histogram</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/resampling1000_36m_histogram-1.png" width="672" /></p>
+<p>Gemiddelden van de geannualiseerde 36-m returns over de 1000 histories en de sd’s daarvan in %</p>
+<pre><code>## # A tibble: 5 × 4
+##   name    horizon  mean    sd
+##   &lt;fct&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 MSDEWIN       3   6.6   8.3
+## 2 BM8020        3   6.2   6.6
+## 3 BM5050        3   5.4   4.2
+## 4 BM2080        3   4.5   2.4
+## 5 BENEGA        3   3.8   2.4</code></pre>
+</div>
+<div id="langere-horizon-dezelfde-returns-kleinere-spreiding" class="section level1">
+<h1>Langere horizon, dezelfde returns, kleinere spreiding</h1>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/chart_sd_mean_per_horizon-1.png" width="672" /></p>
+</div>
+<div id="projecties" class="section level1">
+<h1>Projecties</h1>
+<p>Groeipaden van EUR 1000.000, gemiddeld en 5% en 95% kwantielen</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/chart_mean_pm_sd_index-1.png" width="672" /></p>
+<p>Focus op de risico’s aan de onderkant: 1% kwantiel en de allerslechtste uitkomst erbij. Meer aandelen is hoogstwaarschijnlijk de beste uitkomst, maar in het slechtste geval wel slechter dan met obligaties.</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/chart_mean_pm_sd_index_downside-1.png" width="672" /></p>
+</div>

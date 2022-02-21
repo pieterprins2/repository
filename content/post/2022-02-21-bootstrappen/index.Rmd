@@ -1,0 +1,353 @@
+---
+title: Bootstrappen
+author: Pieter Prins
+date: '2022-02-21'
+slug: bootstrappen
+categories: []
+tags: []
+---
+
+```{r setup, include = FALSE, echo = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(modelr)
+library(tidymodels)
+library(tidyverse) # ggplot2, purrr, dplyr, tidyr, readr, tibble, stringr
+library(readxl) # xlx inlezen
+library(kableExtra) #tabellen
+library(knitr)
+library(lubridate)
+
+# Suppress summarise info dplyr
+options(dplyr.summarise.inform = FALSE)
+options(knitr.table.format = "html") 
+
+```
+
+```{r prijzen_inlezen, include=FALSE, include = FALSE, echo = FALSE}
+prices_file <- "/Users/pieter/OneDrive/R Projects/Beleggersprofiel/20220131_benchmarks.xlsx"
+
+all_prices_local_raw_dates <- 
+  read_xlsx(prices_file, 
+            sheet = "Worksheet", 
+            skip = 0, 
+            col_types = c("date", rep("numeric", 2)),
+            na = c("#N/A", "#N/A N/A")) %>% 
+  mutate(date = as.Date(Date), across(!where(is.Date), as.numeric))
+
+#dates naar ultimo
+all_prices_local <- all_prices_local_raw_dates %>% 
+  mutate(date = floor_date(date, unit = "month"), date = lubridate::rollback(date + months(1)))
+
+names(all_prices_local) <- 
+  names(all_prices_local) %>% 
+  str_remove(" Index") %>% 
+  str_remove(" Equity") %>% 
+  str_remove(" Curncy") %>% 
+  str_remove(" Govt") %>% 
+  str_replace_all(" ", "_") %>% 
+  str_replace("NETHER_", "NL") %>% 
+  str_replace("T_", "T") %>% 
+  str_replace("/20", "") %>% 
+  str_replace("_0", "_")
+
+all_prices_local <- all_prices_local %>% select(date, MSDEWIN, BENEGA)
+```
+
+```{r bms_maken, include=FALSE, include = FALSE, echo = FALSE}
+
+bm_returns_eur <- 
+  all_prices_local %>%
+  arrange(date) %>% 
+  filter(date > "1998-11-30") %>% 
+  mutate(MSDEWIN_return = MSDEWIN/lag(MSDEWIN) - 1, 
+         BENEGA_return = BENEGA/lag(BENEGA) -1, 
+         BM8020_return = 0.8 * MSDEWIN_return + 0.2 * BENEGA_return, 
+         BM5050_return = 0.5 * MSDEWIN_return + 0.5 * BENEGA_return, 
+         BM2080_return = 0.2 * MSDEWIN_return + 0.8 * BENEGA_return) %>% 
+  select(date, MSDEWIN_return, BM8020_return, BM5050_return, BM2080_return, BENEGA_return) %>% 
+  rename_if(is.numeric, .funs = ~str_replace(., "_return", "")) #%>% 
+
+benchmark_levels <- c("MSDEWIN", "BM8020", "BM5050", "BM2080", "BENEGA")
+```
+
+```{r bootstrap_functies, echo = FALSE}
+
+bootstraps_bm_returns <- function(aantal_maanden, aantal_bootstraps) {
+  bm_returns_eur %>%
+    filter(date != "1998-12-31") %>% 
+    rep_slice_sample(reps = aantal_bootstraps, n = aantal_maanden, replace = TRUE) %>% 
+    select(-date) %>% 
+    mutate(maand = row_number()) %>% 
+    rename(id = replicate) %>% 
+    select(id, maand, everything()) %>% 
+    group_by(id)
+}
+
+index_paden_bootstraps <- function(bootstraps) {
+  paden_tabel <-
+    bootstraps %>% 
+    pivot_longer(cols = all_of(benchmark_levels)) %>% 
+    group_by(id, name)
+
+  nulregels <- #moet erbij anders start het niet bij 0
+    paden_tabel %>% 
+    filter(maand == 1) %>% 
+    mutate(maand = 0, value = 0)
+
+  nulregels %>% 
+    bind_rows(paden_tabel) %>% 
+    mutate(name = factor(name, levels = benchmark_levels)) %>% 
+    group_by(id, name) %>% 
+    mutate(index = cumprod(value + 1) - 1)
+}
+
+geom_ann_returns_bootstraps <- function(index_paden_bootstraps) {
+  index_paden_bootstraps %>% 
+    filter(maand == max(maand)) %>% 
+    mutate(geom_ann_return = (1 + index)^(12/maand) - 1)
+}
+
+bootstraps_summaries <- function(bootstraps_bm_returns) { 
+  index_paden_bootstraps(bootstraps_bm_returns) %>% 
+  geom_ann_returns_bootstraps() %>% 
+  group_by(name) %>% 
+  summarise(horizon = round(nrow(bootstraps_bm_returns)/12/1000, 1),
+            mean = mean(geom_ann_return), 
+            sd = sd(geom_ann_return))
+}
+
+bootstrap_360m_maal_1000 <- 
+  bootstraps_bm_returns(aantal_maanden = 360, aantal_bootstraps = 1000)
+
+index_paden_360m_maal1000_bootstraps <- 
+  bootstrap_360m_maal_1000 %>% index_paden_bootstraps()
+
+geom_ann_returns_360m_maal1000_bootstraps <-
+  index_paden_360m_maal1000_bootstraps %>% 
+  geom_ann_returns_bootstraps()
+  
+```
+
+# Historie vanaf 1999
+
+Return historie aandelen, obligaties en verschillende mixen, sinds 2015 (te weinig uiteraard, het gaat om het idee)
+
+```{r bm_returns, echo = FALSE}
+bm_returns_eur %>% 
+  mutate_at(all_of(benchmark_levels), function(x) round(x * 100, 1))
+```
+
+## Deze historie in grafieken
+
+```{r historie_chart, echo = FALSE, fig.height = 4}
+bm_returns_eur %>% 
+  replace(is.na(.), 0) %>% 
+  pivot_longer(cols = all_of(benchmark_levels)) %>% 
+  mutate(name = factor(name, levels = benchmark_levels)) %>% 
+  group_by(name) %>% 
+  mutate(index = cumprod(value + 1) - 1) %>% 
+  ggplot() +
+  geom_line(aes(x= date, y = index, col = name)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 2)) +
+  scale_x_date( breaks = pretty_breaks(n = 4)) +
+  facet_wrap(~name, ncol = 5) +
+  labs(x = "", y = "") +
+  theme(legend.position = "none")
+```
+
+# Een alternatieve 12-maands historie
+
+Een alternatieve historie (een "bootstrap") kan worden gemaakt door door per regel een willekeurige trekking uit de historie te doen. "Met teruglegging", dus kunnen regels meerdere keren, maar ook helemaal niet, voorkomen
+
+```{r enkele_12m_resampling, echo = FALSE}
+#1 bootstrap van de returns
+bootstrap_12m_maal_1 <-
+  bootstrap_360m_maal_1000 %>% 
+  head(12)
+
+bootstrap_12m_maal_1 %>% 
+  mutate_at(all_of(benchmark_levels), function(x) round(x * 100, 1))
+
+```
+
+Deze ene specifieke alternatieve 12-m historie geeft de volgende grafieken
+
+```{r single_alt_historie_chart, echo = FALSE,  fig.height = 4}
+index_paden_360m_maal1000_bootstraps %>% 
+  filter(id == 1, maand <= 12) %>% 
+  ggplot() +
+  geom_line(aes(x= maand, y = index, col = name)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 2)) +
+  scale_x_continuous(breaks = seq(0, 12, 2)) +
+  facet_wrap(~name, ncol = 5) +
+  labs(x = "", y = "") +
+  theme(legend.position = "none")
+```
+
+# 1000 alternatieve 12-maands histories
+
+Door deze trekking 1000 keer te doen ontstaan 1000 alternatieve histories
+
+```{r bootstrap_12m_maal_1000_chart, echo = FALSE,  fig.height = 4}
+bootstrap_360m_maal_1000 %>% 
+  filter(maand <= 12) %>% 
+  index_paden_bootstraps() %>% 
+  ggplot() + 
+  geom_line(aes(group = id, y = index, x = maand, col = name), alpha = 0.1) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 2)) +
+  scale_x_continuous(breaks = seq(0, 12, 2)) +
+  facet_wrap(~name, ncol = 5) +
+  theme(legend.position = "none") +
+  labs(x = "", y = "")
+```
+
+De geannualiseerde returns van deze 1000 12-m alternatieve histories voor elk van de benchmarks in een histogram
+
+```{r resampling1000_histogram, echo = FALSE,  fig.height = 4}
+  index_paden_360m_maal1000_bootstraps %>%
+    filter(maand <= 12) %>% 
+    geom_ann_returns_bootstraps() %>% 
+  ggplot(aes(x = geom_ann_return, group = name, col = name, fill = name)) +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 2)) +
+  facet_wrap(~name, ncol = 5) +
+  geom_histogram(bins = 30) + coord_flip() +
+  theme(legend.position = "none") +
+  labs(x = "", y = "")
+```
+
+Gemiddelden van de geannualiseerde 12-m returns over de 1000 histories en de sd's daarvan in %
+
+```{r mean_sd_tabel_12m_1000, echo=FALSE, echo = FALSE}
+bootstrap_360m_maal_1000 %>% 
+  filter(maand <= 12) %>% 
+  bootstraps_summaries() %>% 
+  mutate_at(vars(c(mean, sd)), function(x) round(x * 100, 1))
+```
+
+# 1000 alternatieve 36-maands histories
+
+Een langere horizon, zeg 3 jaar, is te maken door 1000 keer 36 trekkingen te doen
+
+```{r 1000_36m_alt_historie_chart, echo = FALSE,  fig.height = 4}
+index_paden_360m_maal1000_bootstraps %>% 
+  filter(maand <= 36) %>% 
+  ggplot() +
+  geom_line(aes(group = id, x = maand, y = index, col = name), alpha = 0.1) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 2)) +
+  facet_wrap(~name, ncol = 5) +
+  labs(x = "", y = "") +
+  theme(legend.position = "none")
+```
+
+De geannualiseerde returns van deze 1000 alternatieve 36-maands histories voor elk van de benchmarks in een histogram
+
+```{r resampling1000_36m_histogram, echo = FALSE,  fig.height = 4}
+index_paden_360m_maal1000_bootstraps %>%
+  filter(maand <= 36) %>%  
+  geom_ann_returns_bootstraps() %>% 
+  ggplot(aes(x = geom_ann_return, group = name, col = name, fill = name)) +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 2)) +
+  geom_histogram(bins = 30) + 
+  coord_flip() +
+  facet_wrap(~name, ncol = 5) +
+  theme(legend.position = "none") +
+  labs(x = "", y = "")
+```
+
+Gemiddelden van de geannualiseerde 36-m returns over de 1000 histories en de sd's daarvan in %
+
+```{r mean_sd_tabel_36m_1000, echo=FALSE, echo = FALSE}
+bootstrap_360m_maal_1000 %>% 
+  filter(maand <= 36) %>% 
+  bootstraps_summaries() %>% 
+  mutate_at(vars(c(mean, sd)), function(x) round(x * 100, 1))
+```
+
+# Langere horizon, dezelfde returns, kleinere spreiding
+
+```{r mean_en_sd_per_horizon, echo=FALSE, echo = FALSE}
+
+summaries_1000_bootstraps_xm_summaries <- function(aantal_maanden = 12) {
+  bootstrap_360m_maal_1000 %>%
+  filter(maand <= aantal_maanden) %>% 
+  bootstraps_summaries()
+}
+
+tabel_horizons <-
+  summaries_1000_bootstraps_xm_summaries(aantal_maanden = 360) %>% 
+  bind_rows(summaries_1000_bootstraps_xm_summaries(aantal_maanden = 240)) %>% 
+  bind_rows(summaries_1000_bootstraps_xm_summaries(aantal_maanden = 120)) %>% 
+  bind_rows(summaries_1000_bootstraps_xm_summaries(aantal_maanden = 60)) %>% 
+  bind_rows(summaries_1000_bootstraps_xm_summaries(aantal_maanden = 36)) %>% 
+  bind_rows(summaries_1000_bootstraps_xm_summaries(aantal_maanden = 12)) %>% 
+  mutate(name = factor(name, levels = all_of(benchmark_levels))) %>% 
+  group_by(name, horizon)
+```
+
+```{r chart_sd_mean_per_horizon, echo=FALSE, echo = FALSE,  fig.height = 4}
+
+tabel_horizons %>% 
+  rename(benchmark = name) %>% 
+  pivot_longer(cols = c(mean, sd)) %>% 
+  mutate(horizon = factor(horizon, levels = c("1", "3", "5", "10", "20", "30"))) %>%
+  ggplot(aes(horizon, benchmark)) +
+    geom_col(aes(y = value, fill = benchmark)) + 
+    facet_grid(name ~ benchmark) +
+    theme(legend.position = "none") + 
+    scale_x_discrete(breaks = c("1", "3", "5", "10", "20", "30")) + 
+    scale_y_continuous(labels = scales::percent_format(accuracy = 2)) + 
+    labs(x = "horizon", y = "")
+
+```
+
+# Projecties
+
+Groeipaden van EUR 1000.000, gemiddeld en 5% en 95% kwantielen
+
+```{r chart_mean_pm_sd_index, echo=FALSE, echo = FALSE,  fig.height = 4}
+
+p <- 
+  index_paden_360m_maal1000_bootstraps %>% 
+  group_by(maand, name) %>% 
+  summarise(mean = mean(index), q05 = quantile(index, .05), q95 = quantile(index, .95)) %>% 
+  #mutate() %>% 
+  rename(benchmark  = name) %>% 
+  pivot_longer(cols = c(mean, q05, q95)) %>% 
+  mutate(value = (value + 1) * 1000000, 
+         maand = 2022 + maand/12) %>% 
+  ggplot(aes(x = maand, y = value, group = name, col = benchmark)) +
+  geom_line(aes(linetype = name), size = 1.5) +
+  scale_y_continuous(breaks = c(1e6, 5e6, 10e6, 15e6, 20e6), 
+                     labels = scales::number_format(accuracy = 1, decimal.mark = '.')) +
+  scale_linetype_manual(values = c(1,3,3)) +
+  facet_wrap(~benchmark, ncol = 5) +
+  labs(x = "") +
+  theme(legend.position = "none")
+
+p
+```
+
+Focus op de risico's aan de onderkant: 1% kwantiel en de allerslechtste uitkomst erbij. Meer aandelen is hoogstwaarschijnlijk de beste uitkomst, maar in het slechtste geval wel slechter dan met obligaties.
+
+```{r chart_mean_pm_sd_index_downside, echo=FALSE, warning = FALSE, echo = FALSE,  fig.height = 4}
+
+p <- 
+  index_paden_360m_maal1000_bootstraps %>% 
+  group_by(maand, name) %>% 
+  summarise(mean = mean(index), min = min(index), q01 = quantile(index, .01), q05 = quantile(index, .05), q95 = quantile(index, .95)) %>% 
+  #mutate() %>% 
+  rename(benchmark  = name) %>% 
+  pivot_longer(cols = c(mean, min, q01, q05, q95)) %>% 
+  mutate(value = (value + 1) * 1000000, 
+         maand = 2022 + maand/12) %>% 
+  ggplot(aes(x = maand, y = value, group = name, col = benchmark)) +
+  geom_line(aes(linetype = name), size = 1.5) +
+  scale_y_continuous(limits = c(0.5, 5e6), breaks = seq(0, 5e6, 0.5e6), 
+                     labels = scales::number_format(accuracy = 1, decimal.mark = '.')) +
+  scale_linetype_manual(values = c(1,3, 3, 3, 4, 5)) +
+  facet_wrap(~benchmark, ncol = 5) +
+  labs(x = "") +
+  theme(legend.position = "none")
+
+p
