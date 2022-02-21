@@ -5,6 +5,15 @@ date: '2022-02-21'
 slug: bootstrappen
 categories: []
 tags: []
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_float:
+      toc_collapsed: yes
+    toc_depth: 4
+    number_sections: yes
+    theme: lumen
 ---
 
 ```{r setup, include = FALSE, echo = FALSE}
