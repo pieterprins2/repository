@@ -5,6 +5,15 @@ date: '2022-02-21'
 slug: bootstrappen
 categories: []
 tags: []
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_float:
+      toc_collapsed: yes
+    toc_depth: 4
+    number_sections: yes
+    theme: lumen
 ---
 
 ```{r setup, include = FALSE, echo = FALSE}
@@ -131,7 +140,7 @@ geom_ann_returns_360m_maal1000_bootstraps <-
 
 # Historie vanaf 1999
 
-Return historie aandelen, obligaties en verschillende mixen, sinds 2015 (te weinig uiteraard, het gaat om het idee)
+Return historie aandelen, obligaties en verschillende mixen, sinds 1999
 
 ```{r bm_returns, echo = FALSE}
 bm_returns_eur %>% 
