@@ -1,10 +1,5 @@
 ---
 title: Bootstrappen
-author: Pieter Prins
-date: '2022-02-21'
-slug: bootstrappen
-categories: []
-tags: []
 output:
   html_document:
     df_print: paged
@@ -14,6 +9,12 @@ output:
     toc_depth: 4
     number_sections: yes
     theme: lumen
+
+author: Pieter Prins
+date: '2022-02-21'
+slug: bootstrappen
+categories: []
+tags: []
 ---
 
 ```{r setup, include = FALSE, echo = FALSE}
