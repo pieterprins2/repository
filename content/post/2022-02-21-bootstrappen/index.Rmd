@@ -9,7 +9,6 @@ output:
     toc_depth: 4
     number_sections: yes
     theme: lumen
-
 author: Pieter Prins
 date: '2022-02-21'
 slug: bootstrappen
