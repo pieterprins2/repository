@@ -7,7 +7,7 @@ categories: []
 tags: []
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, warning = FALSE, echo = FALSE, message = FALSE}
 knitr::opts_chunk$set(collapse = TRUE)
 library(tidyverse)
 ```
@@ -47,7 +47,7 @@ function(symbol, start_date, end_date, period = "d") {
 }
 ```
 
-#Koersen ("adjusted", dwz inclusief dividend en splits) van een aantal long term winners downloaden
+
 
 ```{r, echo = FALSE}
 #Koersen ("adjusted", dwz inclusief dividend en splits) van een aantal long term winners downloaden
@@ -86,7 +86,7 @@ price_index_vol_lt_winners  %>%
                 font_size = 13)
 ```
 
-Prijsindex, startend vanaf eerste beschikbaarheid
+Long term "winners" en coca cola. Prijsindex, startend vanaf eerste beschikbaarheid
 
 ```{r, warning = FALSE, echo = FALSE}
 
