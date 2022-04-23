@@ -1,0 +1,142 @@
+---
+title: BTC vol
+author: 'Pieter Prins'
+date: '2022-04-23'
+slug: btc-vol
+categories: []
+tags: []
+---
+
+```{r setup}
+knitr::opts_chunk$set(collapse = TRUE)
+library(tidyverse)
+```
+
+```{r, warning = FALSE, , message = FALSE}
+library(tidyverse)
+library(roll)
+library(kableExtra)
+
+#eod api token
+eod_api_token <- "5e99d67dd4c0e3.33142421"
+
+```
+
+
+```{r, warning = FALSE, }
+get_eod_adj <-
+function(symbol, start_date, end_date, period = "d") {
+  ticker_link <- 
+    str_c("http://nonsecure.eodhistoricaldata.com/api/eod/", 
+          symbol, 
+          "?api_token=", eod_api_token, 
+          "&period=", period, 
+          "&order=d", 
+          "&from=", start_date,
+          "&to=", end_date,
+          sep= "")
+  read.csv(url(ticker_link)) %>% 
+  as_tibble() %>% 
+  mutate(eod_ticker = symbol) %>% 
+  rename(date = Date) %>% 
+  mutate(date = as.Date(date)) %>% 
+  arrange(date) %>% 
+  select(date, eod_ticker, Adjusted_close) %>% 
+  rename(price = Adjusted_close) %>% 
+  slice(-n()) #laatste regel is NA
+}
+```
+
+Koersen ("adjusted", dwz inclusief dividend en splits) van een aantal long term winners downloaden
+
+```{r}
+prices_lt_winners_adj <- 
+  map_dfr(c("KO.US", "AAPL.US", "AMZN.US", "GOOGL.US", "TSLA.US", "BTC-USD.CC"), get_eod_adj, start_date = "1990-01-01", end_date = Sys.Date(), period = "d") %>% 
+  group_by(eod_ticker)
+```
+
+
+Koersindex en vol berekenen
+
+```{r, warning = FALSE, }
+
+price_index_vol_lt_winners <-
+  prices_lt_winners_adj %>% 
+  mutate(dP = price - lag(price), 
+         dP_pct = ifelse(date == min(date), 0, dP/lag(price)), 
+         price_index = cumprod(dP_pct + 1), 
+         roll_vol_250d = roll_sd(dP_pct, 250) * sqrt(250)) 
+```
+
+Eerste beschikbaarheid datum, koersen en prijsindex
+
+```{r}
+price_index_vol_lt_winners  %>% 
+  filter(date == min(date) | date == max(date)) %>% 
+  select(eod_ticker, date, price, price_index) %>% 
+  kbl(escape = FALSE, 
+      digits = c(2, 0), 
+      align = c('l', 'l', 'r', "r"), 
+      caption = "Eerste en laatste koersen") %>% 
+      collapse_rows(columns = 1, valign = "top") %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), 
+                full_width = FALSE, 
+                font_size = 13)
+```
+
+
+Prijsindex, startend vanaf eerste beschikbaarheid
+
+```{r, warning = FALSE, }
+
+price_index_vol_lt_winners %>% 
+  ggplot() + 
+  geom_line(aes(x = date, y = price_index, group = eod_ticker, col = eod_ticker))
+
+```
+
+Prijsindex exclusief bitcoin, startend vanaf eerste beschikbaarheid
+
+```{r, warning = FALSE, }
+
+price_index_vol_lt_winners %>% 
+  filter(eod_ticker != "BTC-USD.CC") %>% 
+  ggplot() + 
+  geom_line(aes(x = date, y = price_index, group = eod_ticker, col = eod_ticker))
+
+```
+
+Prijsindex exclusief bitcoin en amazon, startend vanaf eerste beschikbaarheid
+
+```{r, warning = FALSE, }
+
+price_index_vol_lt_winners %>% 
+  filter(!eod_ticker %in%  c("BTC-USD.CC", "AMZN.US")) %>% 
+  ggplot() + 
+  geom_line(aes(x = date, y = price_index, group = eod_ticker, col = eod_ticker))
+
+```
+
+Prijsindex exclusief bitcoin, amazon en apple, startend vanaf eerste beschikbaarheid
+
+```{r, warning = FALSE, }
+
+price_index_vol_lt_winners %>% 
+  filter(!eod_ticker %in%  c("BTC-USD.CC", "AMZN.US", "AAPL.US")) %>% 
+  ggplot() + 
+  geom_line(aes(x = date, y = price_index, group = eod_ticker, col = eod_ticker))
+
+```
+
+Volatility (250 daags voortschrijdend op jaarbasis), startend vanaf eerste beschikbaarheid
+
+```{r, warning = FALSE, }
+
+price_index_vol_lt_winners %>% 
+  ggplot() + 
+  geom_line(aes(x = date, y = roll_vol_250d, group = eod_ticker, col = eod_ticker))
+
+```
+
+Volatiliteit bitcoin is gedaald van zeer hoge niveaus richting dat van de meer volatiele aandelen
+

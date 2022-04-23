@@ -1,0 +1,300 @@
+---
+title: BTC vol
+author: 'Pieter Prins'
+date: '2022-04-23'
+slug: btc-vol
+categories: []
+tags: []
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+<script src="{{< blogdown/postref >}}index_files/kePrint/kePrint.js"></script>
+<link href="{{< blogdown/postref >}}index_files/lightable/lightable.css" rel="stylesheet" />
+
+
+<pre class="r"><code>knitr::opts_chunk$set(collapse = TRUE)
+library(tidyverse)</code></pre>
+<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
+<pre><code>## ✓ ggplot2 3.3.5     ✓ purrr   0.3.4
+## ✓ tibble  3.1.6     ✓ dplyr   1.0.7
+## ✓ tidyr   1.1.4     ✓ stringr 1.4.0
+## ✓ readr   2.1.1     ✓ forcats 0.5.1</code></pre>
+<pre><code>## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()</code></pre>
+<pre class="r"><code>library(tidyverse)
+library(roll)
+library(kableExtra)
+
+#eod api token
+eod_api_token &lt;- &quot;5e99d67dd4c0e3.33142421&quot;</code></pre>
+<pre class="r"><code>get_eod_adj &lt;-
+function(symbol, start_date, end_date, period = &quot;d&quot;) {
+  ticker_link &lt;- 
+    str_c(&quot;http://nonsecure.eodhistoricaldata.com/api/eod/&quot;, 
+          symbol, 
+          &quot;?api_token=&quot;, eod_api_token, 
+          &quot;&amp;period=&quot;, period, 
+          &quot;&amp;order=d&quot;, 
+          &quot;&amp;from=&quot;, start_date,
+          &quot;&amp;to=&quot;, end_date,
+          sep= &quot;&quot;)
+  read.csv(url(ticker_link)) %&gt;% 
+  as_tibble() %&gt;% 
+  mutate(eod_ticker = symbol) %&gt;% 
+  rename(date = Date) %&gt;% 
+  mutate(date = as.Date(date)) %&gt;% 
+  arrange(date) %&gt;% 
+  select(date, eod_ticker, Adjusted_close) %&gt;% 
+  rename(price = Adjusted_close) %&gt;% 
+  slice(-n()) #laatste regel is NA
+}</code></pre>
+<p>Koersen (“adjusted”, dwz inclusief dividend en splits) van een aantal long term winners downloaden</p>
+<pre class="r"><code>prices_lt_winners_adj &lt;- 
+  map_dfr(c(&quot;KO.US&quot;, &quot;AAPL.US&quot;, &quot;AMZN.US&quot;, &quot;GOOGL.US&quot;, &quot;TSLA.US&quot;, &quot;BTC-USD.CC&quot;), get_eod_adj, start_date = &quot;1990-01-01&quot;, end_date = Sys.Date(), period = &quot;d&quot;) %&gt;% 
+  group_by(eod_ticker)</code></pre>
+<p>Koersindex en vol berekenen</p>
+<pre class="r"><code>
+price_index_vol_lt_winners &lt;-
+  prices_lt_winners_adj %&gt;% 
+  mutate(dP = price - lag(price), 
+         dP_pct = ifelse(date == min(date), 0, dP/lag(price)), 
+         price_index = cumprod(dP_pct + 1), 
+         roll_vol_250d = roll_sd(dP_pct, 250) * sqrt(250)) </code></pre>
+<p>Eerste beschikbaarheid datum, koersen en prijsindex</p>
+<pre class="r"><code>price_index_vol_lt_winners  %&gt;% 
+  filter(date == min(date) | date == max(date)) %&gt;% 
+  select(eod_ticker, date, price, price_index) %&gt;% 
+  kbl(escape = FALSE, 
+      digits = c(2, 0), 
+      align = c(&#39;l&#39;, &#39;l&#39;, &#39;r&#39;, &quot;r&quot;), 
+      caption = &quot;Eerste en laatste koersen&quot;) %&gt;% 
+      collapse_rows(columns = 1, valign = &quot;top&quot;) %&gt;% 
+  kable_styling(bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;), 
+                full_width = FALSE, 
+                font_size = 13)</code></pre>
+<table class="table table-striped table-hover table-condensed" style="font-size: 13px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+<span id="tab:unnamed-chunk-5">Table 1: </span>Eerste en laatste koersen
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+eod_ticker
+</th>
+<th style="text-align:left;">
+date
+</th>
+<th style="text-align:right;">
+price
+</th>
+<th style="text-align:right;">
+price_index
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+KO.US
+</td>
+<td style="text-align:left;">
+1990-01-02
+</td>
+<td style="text-align:right;">
+2.32
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+KO.US
+</td>
+<td style="text-align:left;">
+2022-04-22
+</td>
+<td style="text-align:right;">
+65.25
+</td>
+<td style="text-align:right;">
+28
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AAPL.US
+</td>
+<td style="text-align:left;">
+1990-01-02
+</td>
+<td style="text-align:right;">
+0.27
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AAPL.US
+</td>
+<td style="text-align:left;">
+2022-04-22
+</td>
+<td style="text-align:right;">
+161.79
+</td>
+<td style="text-align:right;">
+609
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AMZN.US
+</td>
+<td style="text-align:left;">
+1997-05-15
+</td>
+<td style="text-align:right;">
+1.96
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AMZN.US
+</td>
+<td style="text-align:left;">
+2022-04-22
+</td>
+<td style="text-align:right;">
+2887.00
+</td>
+<td style="text-align:right;">
+1474
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+GOOGL.US
+</td>
+<td style="text-align:left;">
+2004-08-19
+</td>
+<td style="text-align:right;">
+50.22
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+GOOGL.US
+</td>
+<td style="text-align:left;">
+2022-04-22
+</td>
+<td style="text-align:right;">
+2392.71
+</td>
+<td style="text-align:right;">
+48
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TSLA.US
+</td>
+<td style="text-align:left;">
+2010-06-29
+</td>
+<td style="text-align:right;">
+4.78
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TSLA.US
+</td>
+<td style="text-align:left;">
+2022-04-22
+</td>
+<td style="text-align:right;">
+1005.05
+</td>
+<td style="text-align:right;">
+210
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+BTC-USD.CC
+</td>
+<td style="text-align:left;">
+2010-07-17
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+BTC-USD.CC
+</td>
+<td style="text-align:left;">
+2022-04-23
+</td>
+<td style="text-align:right;">
+39653.47
+</td>
+<td style="text-align:right;">
+800918
+</td>
+</tr>
+</tbody>
+</table>
+<p>Prijsindex, startend vanaf eerste beschikbaarheid</p>
+<pre class="r"><code>
+price_index_vol_lt_winners %&gt;% 
+  ggplot() + 
+  geom_line(aes(x = date, y = price_index, group = eod_ticker, col = eod_ticker))</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>Prijsindex exclusief bitcoin, startend vanaf eerste beschikbaarheid</p>
+<pre class="r"><code>
+price_index_vol_lt_winners %&gt;% 
+  filter(eod_ticker != &quot;BTC-USD.CC&quot;) %&gt;% 
+  ggplot() + 
+  geom_line(aes(x = date, y = price_index, group = eod_ticker, col = eod_ticker))</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>Prijsindex exclusief bitcoin en amazon, startend vanaf eerste beschikbaarheid</p>
+<pre class="r"><code>
+price_index_vol_lt_winners %&gt;% 
+  filter(!eod_ticker %in%  c(&quot;BTC-USD.CC&quot;, &quot;AMZN.US&quot;)) %&gt;% 
+  ggplot() + 
+  geom_line(aes(x = date, y = price_index, group = eod_ticker, col = eod_ticker))</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>Prijsindex exclusief bitcoin, amazon en apple, startend vanaf eerste beschikbaarheid</p>
+<pre class="r"><code>
+price_index_vol_lt_winners %&gt;% 
+  filter(!eod_ticker %in%  c(&quot;BTC-USD.CC&quot;, &quot;AMZN.US&quot;, &quot;AAPL.US&quot;)) %&gt;% 
+  ggplot() + 
+  geom_line(aes(x = date, y = price_index, group = eod_ticker, col = eod_ticker))</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>Volatility (250 daags voortschrijdend op jaarbasis), startend vanaf eerste beschikbaarheid</p>
+<pre class="r"><code>
+price_index_vol_lt_winners %&gt;% 
+  ggplot() + 
+  geom_line(aes(x = date, y = roll_vol_250d, group = eod_ticker, col = eod_ticker))</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p>Volatiliteit bitcoin is gedaald van zeer hoge niveaus richting dat van de meer volatiele aandelen</p>
