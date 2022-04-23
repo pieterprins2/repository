@@ -12,7 +12,7 @@ knitr::opts_chunk$set(collapse = TRUE)
 library(tidyverse)
 ```
 
-```{r, warning = FALSE, , message = FALSE}
+```{r, warning = FALSE, echo = FALSE, message = FALSE}
 library(tidyverse)
 library(roll)
 library(kableExtra)
@@ -23,7 +23,7 @@ eod_api_token <- "5e99d67dd4c0e3.33142421"
 ```
 
 
-```{r, warning = FALSE, }
+```{r, warning = FALSE, echo = FALSE}
 get_eod_adj <-
 function(symbol, start_date, end_date, period = "d") {
   ticker_link <- 
@@ -49,7 +49,7 @@ function(symbol, start_date, end_date, period = "d") {
 
 Koersen ("adjusted", dwz inclusief dividend en splits) van een aantal long term winners downloaden
 
-```{r}
+```{r, echo = FALSE}
 prices_lt_winners_adj <- 
   map_dfr(c("KO.US", "AAPL.US", "AMZN.US", "GOOGL.US", "TSLA.US", "BTC-USD.CC"), get_eod_adj, start_date = "1990-01-01", end_date = Sys.Date(), period = "d") %>% 
   group_by(eod_ticker)
@@ -58,7 +58,7 @@ prices_lt_winners_adj <-
 
 Koersindex en vol berekenen
 
-```{r, warning = FALSE, }
+```{r, warning = FALSE, echo = FALSE}
 
 price_index_vol_lt_winners <-
   prices_lt_winners_adj %>% 
@@ -70,7 +70,7 @@ price_index_vol_lt_winners <-
 
 Eerste beschikbaarheid datum, koersen en prijsindex
 
-```{r}
+```{r, echo = FALSE}
 price_index_vol_lt_winners  %>% 
   filter(date == min(date) | date == max(date)) %>% 
   select(eod_ticker, date, price, price_index) %>% 
@@ -84,10 +84,9 @@ price_index_vol_lt_winners  %>%
                 font_size = 13)
 ```
 
-
 Prijsindex, startend vanaf eerste beschikbaarheid
 
-```{r, warning = FALSE, }
+```{r, warning = FALSE, echo = FALSE}
 
 price_index_vol_lt_winners %>% 
   ggplot() + 
@@ -97,7 +96,7 @@ price_index_vol_lt_winners %>%
 
 Prijsindex exclusief bitcoin, startend vanaf eerste beschikbaarheid
 
-```{r, warning = FALSE, }
+```{r, warning = FALSE, echo = FALSE}
 
 price_index_vol_lt_winners %>% 
   filter(eod_ticker != "BTC-USD.CC") %>% 
@@ -108,7 +107,7 @@ price_index_vol_lt_winners %>%
 
 Prijsindex exclusief bitcoin en amazon, startend vanaf eerste beschikbaarheid
 
-```{r, warning = FALSE, }
+```{r, warning = FALSE, echo = FALSE }
 
 price_index_vol_lt_winners %>% 
   filter(!eod_ticker %in%  c("BTC-USD.CC", "AMZN.US")) %>% 
@@ -119,7 +118,7 @@ price_index_vol_lt_winners %>%
 
 Prijsindex exclusief bitcoin, amazon en apple, startend vanaf eerste beschikbaarheid
 
-```{r, warning = FALSE, }
+```{r, warning = FALSE, echo = FALSE }
 
 price_index_vol_lt_winners %>% 
   filter(!eod_ticker %in%  c("BTC-USD.CC", "AMZN.US", "AAPL.US")) %>% 
@@ -130,7 +129,7 @@ price_index_vol_lt_winners %>%
 
 Volatility (250 daags voortschrijdend op jaarbasis), startend vanaf eerste beschikbaarheid
 
-```{r, warning = FALSE, }
+```{r, warning = FALSE, echo = FALSE }
 
 price_index_vol_lt_winners %>% 
   ggplot() + 
