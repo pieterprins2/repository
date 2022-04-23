@@ -7,7 +7,7 @@ categories: []
 tags: []
 ---
 
-```{r setup}
+```{r setup, echo = FALSE}
 knitr::opts_chunk$set(collapse = TRUE)
 library(tidyverse)
 ```
@@ -47,18 +47,20 @@ function(symbol, start_date, end_date, period = "d") {
 }
 ```
 
-Koersen ("adjusted", dwz inclusief dividend en splits) van een aantal long term winners downloaden
+#Koersen ("adjusted", dwz inclusief dividend en splits) van een aantal long term winners downloaden
 
 ```{r, echo = FALSE}
+#Koersen ("adjusted", dwz inclusief dividend en splits) van een aantal long term winners downloaden
+
 prices_lt_winners_adj <- 
   map_dfr(c("KO.US", "AAPL.US", "AMZN.US", "GOOGL.US", "TSLA.US", "BTC-USD.CC"), get_eod_adj, start_date = "1990-01-01", end_date = Sys.Date(), period = "d") %>% 
   group_by(eod_ticker)
 ```
 
 
-Koersindex en vol berekenen
 
 ```{r, warning = FALSE, echo = FALSE}
+#Koersindex en vol berekenen
 
 price_index_vol_lt_winners <-
   prices_lt_winners_adj %>% 
